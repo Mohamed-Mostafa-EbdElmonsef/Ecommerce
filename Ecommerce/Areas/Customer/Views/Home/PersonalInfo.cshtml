@@ -1,0 +1,15 @@
+﻿@using Ecommerce.ViewModels
+@model PersonVM
+<ul>
+    @foreach (var item in Model.Persons)
+    {
+    <li>ID: @item.Id</li>
+    <li>Name: @item.Name</li>
+    <li>Age: @item.Age</li>
+    <li>Salary: @item.Salary</li>
+    <br />
+        
+    }
+</ul>
+
+<h2>Count: @Model.Count</h2>
