@@ -1,4 +1,4 @@
-﻿@model Product
+﻿@model ProductVM
 <div class="container">
     <div class="row mb-3 align-items-center my-3">
         <div class="col-md-6">
@@ -9,36 +9,180 @@
     <div class="row my-3">
         <div class="col-12">
             <form method="post" enctype="multipart/form-data">
+
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
-                    <input class="form-control" name="Name" value="@Model.Name" />
-                </div>
-                <div class="mb-3">
-                    <label for="Img" class="form-label">Img</label>
-                    <input type="file" name="ImageFile" class="form-control"  accept="image/*" onchange="previewImage(event)">
-                    <span class="text-danger" ></span>
-
+                    <input class="form-control" name="Name" value="@Model.Product.Name" />
                 </div>
 
-                <div class="mb-3">
-                    <img id="preview"
-                         src="~/images/@Model.MainImg"
-                         alt="Current Image"
-                         style="max-width: 200px; border:1px solid #ccc; padding:5px; border-radius:10px;" />
-                </div>
 
+                
+                
                 <div class="mb-3">
                     <label for="description" class="form-label">Description</label>
                     <div class="form-floating">
-                        <textarea class="form-control" placeholder="Leave a description here" style="height: 100px" name="Description">@Model.Description</textarea>
+                        <textarea class="form-control" placeholder="Leave a description here" style="height: 100px" name="Description">@Model.Product.Description</textarea>
                         <label for="description">You Description Here...</label>
 
                     </div>
                 </div>
+
+
+
+
+                <div class="mb-3">
+                    <label for="Img" class="form-label">Img</label>
+                    <input type="file" name="ImageFile" class="form-control" accept="image/*" onchange="previewImage(event)">
+                    <span class="text-danger"></span>
+
+                </div>
+
+
+
+                <div class="mb-3">
+                    <img id="preview"
+                         src="~/images/@Model.Product.MainImg"
+                         alt="Current Image"
+                         style="max-width: 200px; border:1px solid #ccc; padding:5px; border-radius:10px;" />
+                </div>
+
+
+
+
+                
+                <div class="mb-3">
+                    <label for="SubImg" class="form-label">SubImg</label>
+                    <input type="file" multiple name="SubImageFiles" class="form-control" accept="image/*" >
+                    <span class="text-danger"></span>
+
+                </div>
+
+
+
+                <div class="mb-3">
+                    @foreach (var item in Model.SubImages)
+                    {
+
+                        <img 
+                             src="~/images/product_sub_images/@item.Img"
+                             alt="Current Image"
+                             style="max-width: 200px; border:1px solid #ccc; padding:5px; border-radius:10px;" />
+                    }
+                </div>
+
+
+
+
+                <div class="mb-3">
+                    <label for="Price" class="form-label">Price</label>
+                    <input class="form-control" name="Price" value="@Model.Product.Price" />
+                </div>
+
+
+
+
+                <div class="mb-3">
+                    <label for="Quantity" class="form-label">Quantity</label>
+                    <input class="form-control" name="Quantity" value="@Model.Product.Quantity" />
+                </div>
+
+
+
+
+                <div class="mb-3">
+                    <label for="Discount" class="form-label">Discount</label>
+                    <input class="form-control" name="Discount" value="@Model.Product.Discount" />
+                </div>
+
+
+
+                <div class="mb-3">
+                    <label for="Color" class="form-label">Color</label>
+
+                    <div id="colorContainer">
+                        @foreach (var item in Model.Colors)
+                        {
+                            <div class="mb-2 d-flex align-items-center gap-2">
+
+                                <input type="color"
+                                       value="@item.Color"
+                                       class="form-control form-control-color"
+                                       name="Colors">
+
+                                <button type="button"
+                                        class="btn btn-danger btn-sm removeColor">
+                                    x
+                                </button>
+
+                            </div>
+                        }
+                    </div>
+
+                    <button type="button"
+                            id="addButtonColor"
+                            class="btn btn-outline-primary">
+                        + Add New Color
+                    </button>
+                </div>
+
+
+                
+                <div class="mb-3">
+                    <label for="status" class="form-label">Category</label>
+                    <select class="form-control" name="CategoryId">
+                        <option>--Select Category--</option>
+                        @foreach (var item in Model.Categories)
+                        {
+                                if (item.Id==Model.Product.CategoryId)
+                                {
+                                <option value="@item.Id" selected>@item.Name</option>
+                                }
+                                else
+                                {
+                                <option value="@item.Id">@item.Name</option>
+                                }
+                                
+
+                        }
+
+                    </select>
+                </div>
+
+
+
+
+
+                <div class="mb-3">
+                    <label for="status" class="form-label">Brand</label>
+                    <select class="form-control" name="BrandId">
+                        <option>--Select Brand--</option>
+                        @foreach (var item in Model.Brands)
+                        {
+                            if (item.Id == Model.Product.BrandId)
+                            {
+                                <option value="@item.Id" selected>@item.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Name</option>
+                            }
+
+                                
+                        }
+
+                    </select>
+                </div>
+
+              
+
+
+
+              
                 <div class="mb-3">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" name="Status">
-                        @if (Model.Status)
+                        @if (Model.Product.Status)
                         {
                             <option value="True" selected>Active</option>
                             <option value="False">InActive</option>
@@ -57,6 +201,11 @@
         </div>
     </div>
 </div>
+
+
+@* 
+script to preview image  *@
+
 <script>
     function previewImage(event) {
         const input = event.target;
@@ -72,3 +221,29 @@
     }
 </script>
 
+
+
+@* script to add color *@
+
+<script>
+    const conateiner = document.getElementById('colorContainer');
+    const addBtn = document.getElementById('addButtonColor');
+
+    addBtn.addEventListener('click', () => {
+        var colorRow = document.createElement('div');
+
+        colorRow.className = 'mb-2 d-flex align-item-center gap-1'
+        colorRow.innerHTML = `
+                        <input type="color" class="form-control form-control-color" name="Colors">
+                        <button type="Button" class="btn btn-danger btn-sm removeColor">x</button>
+                    `;
+
+        conateiner.appendChild(colorRow);
+    });
+
+    conateiner.addEventListener('click', (e) => {
+        if (e.target.classList.contains('removeColor')) {
+            e.target.parentElement.remove();
+        }
+    })
+</script>

@@ -15,13 +15,24 @@ namespace Ecommerce.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            return View(new Category());
         }
         [HttpPost]
         public IActionResult Create(Category category)
         {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error_Notification"] = "InvalidData";
+                return View(category);
+            }
             dbContext.Categories.Add(category);
             dbContext.SaveChanges();
+
+
+            //cookies
+            //Response.Cookies.Append("Successful_Notification","Category Added Successfully");
+            TempData["Successful_Notification"] = "Category Added Successfully";
+
             return RedirectToAction("Index");
         }
         [HttpGet]

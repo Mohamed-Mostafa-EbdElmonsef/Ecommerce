@@ -2,38 +2,23 @@
 <div class="container">
     <div class="row mb-3 align-items-center my-3">
         <div class="col-md-6">
-            <h2 class="display-6">Create new Category</h2>
+            <h2 class="display-6">Create new Product</h2>
         </div>
     </div>
 
     <div class="row my-3" > 
         <div class="col-12">
             <form method="post" enctype="multipart/form-data">
+
+
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
                     <input class="form-control" name="Name" />
                 </div>
 
-                <div class="mb-3">
-                    <label for="name" class="form-label">MainImg</label>
-                    <input type="file" class="form-control" name="ImageFile" />
-                </div>
-                <div class="mb-3">
-                    <label for="SubImageFiles" class="form-label">SubImages</label>
-                    <input type="file" class="form-control" name="SubImageFiles" multiple />
-                </div>
-                <div class="mb-3">
-                    <label for="Price" class="form-label">Price</label>
-                    <input class="form-control" name="Price" />
-                </div>
-                <div class="mb-3">
-                    <label for="Quantity" class="form-label">Quantity</label>
-                    <input class="form-control" name="Quantity" />
-                </div>
-                <div class="mb-3">
-                    <label for="Discount" class="form-label">Discount</label>
-                    <input class="form-control" name="Discount" />
-                </div>
+
+
                 <div class="mb-3">
                     <label for="description" class="form-label">Description</label>
                     <div class="form-floating">
@@ -42,6 +27,45 @@
 
                     </div>
                 </div>
+
+
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">MainImg</label>
+                    <input type="file" class="form-control" name="ImageFile" />
+                </div>
+
+
+
+                <div class="mb-3">
+                    <label for="SubImageFiles" class="form-label">SubImages</label>
+                    <input type="file" class="form-control" name="SubImageFiles" multiple />
+                </div>
+
+
+
+                <div class="mb-3">
+                    <label for="Price" class="form-label">Price</label>
+                    <input class="form-control" name="Price" />
+                </div>
+
+
+
+                <div class="mb-3">
+                    <label for="Quantity" class="form-label">Quantity</label>
+                    <input class="form-control" name="Quantity" />
+                </div>
+
+
+
+                <div class="mb-3">
+                    <label for="Discount" class="form-label">Discount</label>
+                    <input class="form-control" name="Discount" />
+                </div>
+
+
+
+              
                 <div class="mb-3">
                     <label for="Color" class="form-label">Color</label>
 
@@ -53,6 +77,9 @@
 
                     <button type="button" id="addButtonColor" class="btn btn-outline-primary">+ Add New Color</button>
                 </div>
+
+
+
                 <div class="mb-3">
                     <label for="status" class="form-label">Category</label>
                     <select class="form-control" name="CategoryId">
@@ -65,9 +92,14 @@
 
                     </select>
                 </div>
+
+
+
+
+
                 <div class="mb-3">
                     <label for="status" class="form-label">Brand</label>
-                    <select class="form-control" name="CategoryId">
+                    <select class="form-control" name="BrandId">
                         <option>--Select Brand--</option>
                         @foreach (var item in Model.Brands)
                         {
@@ -79,6 +111,8 @@
                 </div>
               
 
+
+
                 <div class="mb-3">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" name="Status">
@@ -87,7 +121,14 @@
                     </select>
 
                 </div>
+
+
+
+
                 <button type="submit" class="btn btn-primary">Submit</button>
+
+
+
             </form>
         </div>
     </div>

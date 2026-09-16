@@ -2,6 +2,7 @@
 using Ecommerce.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using static System.Net.WebRequestMethods;
 
 namespace Ecommerce.Areas.Admin.Controllers
@@ -10,6 +11,7 @@ namespace Ecommerce.Areas.Admin.Controllers
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
+
         public IActionResult Index(ProductFilterVM filter)
         {
             var products = dbContext.Products.AsQueryable();
@@ -42,6 +44,7 @@ namespace Ecommerce.Areas.Admin.Controllers
             //viewbag 
             ViewBag.categories = dbContext.Categories;
             ViewBag.brands = dbContext.Brands;
+            ViewBag.filter = filter;
 
             //paggination
             ViewBag.TotalPages = (int)Math.Ceiling(products.Count() / 8.0);
@@ -51,6 +54,9 @@ namespace Ecommerce.Areas.Admin.Controllers
 
             return View(products.AsEnumerable());
         }
+
+
+
         [HttpGet]
         public IActionResult Create()
         {
@@ -62,14 +68,16 @@ namespace Ecommerce.Areas.Admin.Controllers
                 Brands = brands
             });
         }
+
+
         [HttpPost]
-        public IActionResult Create(Product product,IFormFile ImageFile)
+        public IActionResult Create(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
         {
-            if (ImageFile != null) 
+            if (ImageFile != null)
             {
-                //var filename = Guid.NewGuid().ToString()+"-"+Path.GetExtension(ImageFile.FileName);
-                var filename = Guid.NewGuid().ToString()+"-"+ImageFile.FileName;
-                var filepath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images",filename);
+
+                var filename = Guid.NewGuid().ToString() + "-" + ImageFile.FileName;
+                var filepath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images", filename);
                 using (var stream = System.IO.File.Create(filepath))
                 {
                     ImageFile.CopyTo(stream);
@@ -77,26 +85,78 @@ namespace Ecommerce.Areas.Admin.Controllers
                 product.MainImg = filename;
 
             }
-                
-            dbContext.Products.Add(product);
+
+            var SavedProduct = dbContext.Products.Add(product);
             dbContext.SaveChanges();
-            return RedirectToAction("Index");
+
+            // add product SubImages 
+            if (SubImageFiles != null && SubImageFiles.Count() > 0)
+            {
+                foreach (var image in SubImageFiles)
+                {
+                    var filename = Guid.NewGuid().ToString() + "-" + image.FileName;
+                    var filepath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\product_sub_images", filename);
+                    using (var stream = System.IO.File.Create(filepath))
+                    {
+                        image.CopyTo(stream);
+                    }
+                    dbContext.ProductSubImages.Add(new ProductSubImage
+                    {
+                        ProductId = SavedProduct.Entity.Id,
+                        Img = filename
+                    });
+                }
+            }
+
+            // add SubColors
+            if (Colors != null && Colors.Count() > 0)
+            {
+                foreach (var color in Colors)
+                {
+                    dbContext.ProductColors.Add(new ProductColor
+                    {
+                        ProductId = SavedProduct.Entity.Id,
+                        Color = color
+                    });
+                }
+            }
+
+
+
+            dbContext.SaveChanges();
+            return RedirectToAction(nameof(Index));
         }
+
+
+
         [HttpGet]
         public IActionResult Update(int id)
         {
             var product = dbContext.Products.FirstOrDefault(b => b.Id == id);
             if (product == null)
             {
-                return RedirectToAction("NotFoundPage","Home");
+                return RedirectToAction("NotFoundPage", "Home");
             }
 
-            return View(product);
+
+            return View(new ProductVM
+            {
+                Categories = dbContext.Categories.ToList(),
+                Brands = dbContext.Brands.ToList(),
+                Product = product,
+                SubImages = dbContext.ProductSubImages.Where(e => e.ProductId == id).ToList(),
+                Colors = dbContext.ProductColors.Where(e => e.ProductId == id).ToList()
+            });
         }
+
+
+
         [HttpPost]
-        public IActionResult Update(Product product,IFormFile ImageFile)
+        public IActionResult Update(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
         {
-            var productInDb = dbContext.Products.AsNoTracking().FirstOrDefault(b=>b.Id == product.Id);
+            var productInDb = dbContext.Products.AsNoTracking().FirstOrDefault(b => b.Id == product.Id);
+
+
             if (ImageFile != null)
             {
 
@@ -120,10 +180,88 @@ namespace Ecommerce.Areas.Admin.Controllers
             {
                 product.MainImg = productInDb.MainImg;
             }
+
+
+
+
+
+            if (SubImageFiles != null && SubImageFiles.Count() > 0)
+            {
+                var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == productInDb.Id);
+                
+                //remove from DB
+                dbContext.ProductSubImages.RemoveRange(oldSubImages);
+
+
+                //remove from WWWroot
+                foreach (var oldImage in oldSubImages)
+                {
+                    var Oldfilepath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\product_sub_images", oldImage.Img);
+
+                    if (System.IO.File.Exists(Oldfilepath))
+                    {
+                        System.IO.File.Delete(Oldfilepath);
+                    }
+                }
+
+                foreach (var file in SubImageFiles)
+                {
+                    
+
+                    if (file != null)
+                    {
+                        //add in wwwroot
+                        var filename = Guid.NewGuid() + "-" + file.FileName;
+                        var filepath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\product_sub_images", filename);
+                        using (var stream = System.IO.File.Create(filepath))
+                        {
+                            file.CopyTo(stream);
+                        }
+
+                        // add in DB
+                        dbContext.ProductSubImages.Add(new ProductSubImage
+                        {
+                            ProductId = productInDb.Id,
+                            Img = filename,
+                        });
+
+                    }
+
+                }
+            }
+
+
+
+            if (Colors != null && Colors.Count() > 0)
+            {
+                //remove from DB
+                var oldColors = dbContext.ProductColors.Where(e => e.ProductId == productInDb.Id);
+                dbContext.ProductColors.RemoveRange(oldColors);
+
+
+                // save in DB
+                foreach (var color in Colors)
+                {
+                    dbContext.ProductColors.Add(new ProductColor
+                    {
+                        ProductId = productInDb.Id,
+                        Color = color
+                    });
+                }
+            }
+
             dbContext.Products.Update(product);
             dbContext.SaveChanges();
+
+
+
+
+
+
             return RedirectToAction("Index");
         }
+
+
 
         public IActionResult Delete(int id)
         {
@@ -138,8 +276,25 @@ namespace Ecommerce.Areas.Admin.Controllers
             {
                 System.IO.File.Delete(Oldfilepath);
             }
+
+
+            var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == product.Id);
+
+        
+
+            //remove from WWWroot
+            foreach (var oldImage in oldSubImages)
+            {
+                var Oldfile = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\product_sub_images", oldImage.Img);
+
+                if (System.IO.File.Exists(Oldfile))
+                {
+                    System.IO.File.Delete(Oldfile);
+                }
+            }
+
             dbContext.Products.Remove(product);
-            dbContext.SaveChanges ();
+            dbContext.SaveChanges();
 
             return RedirectToAction("Index");
         }
