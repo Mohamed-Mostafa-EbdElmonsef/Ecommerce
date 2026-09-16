@@ -298,5 +298,18 @@ namespace Ecommerce.Areas.Admin.Controllers
 
             return RedirectToAction("Index");
         }
+
+
+
+        public IActionResult DeleteImg(int productId,string img)
+        {
+            var ImgDb = dbContext.ProductSubImages.FirstOrDefault(ps => ps.ProductId == productId && ps.Img == img);
+            if(ImgDb != null)
+            {
+                dbContext.ProductSubImages.Remove(ImgDb);
+                dbContext.SaveChanges();
+            }
+            return RedirectToAction(nameof(Update), new { id=productId});
+        }
     }
 }

@@ -53,21 +53,23 @@
                 
                 <div class="mb-3">
                     <label for="SubImg" class="form-label">SubImg</label>
-                    <input type="file" multiple name="SubImageFiles" class="form-control" accept="image/*" >
+                    <input type="file" multiple name="SubImageFiles" class="form-control" accept="image/*">
                     <span class="text-danger"></span>
 
                 </div>
 
 
 
-                <div class="mb-3">
+                <div class="mb-3 d-flex">
                     @foreach (var item in Model.SubImages)
                     {
+                        <div style="position:relative">
 
-                        <img 
-                             src="~/images/product_sub_images/@item.Img"
-                             alt="Current Image"
-                             style="max-width: 200px; border:1px solid #ccc; padding:5px; border-radius:10px;" />
+                            <img  src="~/images/product_sub_images/@item.Img"
+                                 alt="Current Image"
+                                 style="max-width: 200px; border:1px solid #ccc; padding:5px; border-radius:10px;" />
+                            <a href="/Admin/Product/DeleteImg?productId=@item.ProductId&img=@item.Img" class="btn btn-danger rounded-5" style="position:absolute;top:0;right:0"> X </a>
+                        </div>
                     }
                 </div>
 
@@ -134,16 +136,16 @@
                         <option>--Select Category--</option>
                         @foreach (var item in Model.Categories)
                         {
-                                if (item.Id==Model.Product.CategoryId)
-                                {
+                            if (item.Id == Model.Product.CategoryId)
+                            {
                                 <option value="@item.Id" selected>@item.Name</option>
-                                }
-                                else
-                                {
+                            }
+                            else
+                            {
                                 <option value="@item.Id">@item.Name</option>
-                                }
-                                
+                            }
 
+                                
                         }
 
                     </select>
@@ -234,9 +236,9 @@ script to preview image  *@
 
         colorRow.className = 'mb-2 d-flex align-item-center gap-1'
         colorRow.innerHTML = `
-                        <input type="color" class="form-control form-control-color" name="Colors">
-                        <button type="Button" class="btn btn-danger btn-sm removeColor">x</button>
-                    `;
+                            <input type="color" class="form-control form-control-color" name="Colors">
+                            <button type="Button" class="btn btn-danger btn-sm removeColor">x</button>
+                        `;
 
         conateiner.appendChild(colorRow);
     });
