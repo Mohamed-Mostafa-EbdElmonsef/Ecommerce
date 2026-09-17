@@ -1,4 +1,5 @@
 ﻿using Ecommerce.DataAccess;
+using Ecommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Areas.Admin.Controllers
@@ -6,10 +7,12 @@ namespace Ecommerce.Areas.Admin.Controllers
     [Area("Admin")]
     public class CategoryController : Controller
     {
-        private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
-        public IActionResult Index()
+        //private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
+        private readonly CategoryRepository _categoryRepository = new CategoryRepository();
+        public async Task<IActionResult> Index()
         {
-            var categories = dbContext.Categories.AsQueryable();
+            //var categories = dbContext.Categories.AsQueryable();
+            var categories = await _categoryRepository.GetAllAsync();
             return View(categories.AsEnumerable());
         }
         [HttpGet]
@@ -18,15 +21,18 @@ namespace Ecommerce.Areas.Admin.Controllers
             return View(new Category());
         }
         [HttpPost]
-        public IActionResult Create(Category category)
+        public async Task<IActionResult> Create(Category category)
         {
             if (!ModelState.IsValid)
             {
                 TempData["Error_Notification"] = "InvalidData";
                 return View(category);
             }
-            dbContext.Categories.Add(category);
-            dbContext.SaveChanges();
+            //dbContext.Categories.Add(category);
+            await _categoryRepository.InsertAsync(category);
+
+            //dbContext.SaveChanges();
+            await _categoryRepository.CommitAsync();
 
 
             //cookies
@@ -36,9 +42,10 @@ namespace Ecommerce.Areas.Admin.Controllers
             return RedirectToAction("Index");
         }
         [HttpGet]
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var category = dbContext.Categories.Find(id);
+            //var category = dbContext.Categories.Find(id);
+            var category = await _categoryRepository.GetOneAsync(c => c.Id == id);
             if (category == null)
             {
                 return RedirectToAction("NotFoundPage", "Home");
@@ -47,24 +54,29 @@ namespace Ecommerce.Areas.Admin.Controllers
             return View(category);
         }
         [HttpPost]
-        public IActionResult Update(Category category)
+        public async Task<IActionResult> Update(Category category)
         {
-            dbContext.Categories.Update(category);
-            dbContext.SaveChanges();
+            // dbContext.Categories.Update(category);
+            _categoryRepository.Update(category);
+            // dbContext.SaveChanges();
+            await _categoryRepository.CommitAsync();
             return RedirectToAction("Index");
         }
 
 
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var category = dbContext.Categories.Find(id);
+            //var category = dbContext.Categories.Find(id);
+            var category = await _categoryRepository.GetOneAsync(c => c.Id == id);
             if (category == null)
             {
                 return RedirectToAction("NotFoundPage", "Home");
                 //return NotFound();
             }
-            dbContext.Categories.Remove(category);
-            dbContext.SaveChanges();
+            // dbContext.Categories.Remove(category);
+            _categoryRepository.Delete(category);
+            // dbContext.SaveChanges();
+            await _categoryRepository.CommitAsync();
             return RedirectToAction("Index");
         }
     }
