@@ -1,4 +1,5 @@
 ﻿using Ecommerce.DataAccess;
+using Ecommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,10 +8,18 @@ namespace Ecommerce.Areas.Admin.Controllers
     [Area("Admin")]
     public class BrandController : Controller
     {
-        private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
-        public IActionResult Index()
+        // private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
+        private readonly IRepository<Brand> _brandRepository; // = new Repository<Brand>();
+
+        public BrandController(IRepository<Brand> brandRepository)
         {
-            var brands = dbContext.Brands.AsQueryable();
+            _brandRepository = brandRepository;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+           //var brands = dbContext.Brands.AsQueryable();
+            var brands = await _brandRepository.GetAllAsync();
 
             return View(brands.AsEnumerable());
         }
@@ -20,7 +29,7 @@ namespace Ecommerce.Areas.Admin.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult Create(Brand brand,IFormFile ImageFile)
+        public async Task<IActionResult> Create(Brand brand,IFormFile ImageFile)
         {
             if (ImageFile != null) 
             {
@@ -34,15 +43,18 @@ namespace Ecommerce.Areas.Admin.Controllers
                 brand.Logo = filename;
 
             }
-                
-            dbContext.Brands.Add(brand);
-            dbContext.SaveChanges();
+
+            //dbContext.Brands.Add(brand);
+            await _brandRepository.InsertAsync(brand);
+            //dbContext.SaveChanges();
+            await _brandRepository.CommitAsync();
             return RedirectToAction("Index");
         }
         [HttpGet]
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var brand = dbContext.Brands.FirstOrDefault(b => b.Id == id);
+            //var brand = dbContext.Brands.FirstOrDefault(b => b.Id == id);
+            var brand = await _brandRepository.GetOneAsync(b => b.Id == id);
             if (brand == null)
             {
                 return RedirectToAction("NotFoundPage","Home");
@@ -51,9 +63,10 @@ namespace Ecommerce.Areas.Admin.Controllers
             return View(brand);
         }
         [HttpPost]
-        public IActionResult Update(Brand brand,IFormFile ImageFile)
+        public async Task<IActionResult> Update(Brand brand,IFormFile ImageFile)
         {
-            var brandInDb = dbContext.Brands.AsNoTracking().FirstOrDefault(b=>b.Id == brand.Id);
+            //var brandInDb = dbContext.Brands.AsNoTracking().FirstOrDefault(b=>b.Id == brand.Id);
+            var brandInDb = await _brandRepository.GetOneAsync(b => b.Id == brand.Id,IsTracked:false);
             if (ImageFile != null)
             {
 
@@ -77,14 +90,17 @@ namespace Ecommerce.Areas.Admin.Controllers
             {
                 brand.Logo = brandInDb.Logo;
             }
-            dbContext.Brands.Update(brand);
-            dbContext.SaveChanges();
+            //dbContext.Brands.Update(brand);
+            _brandRepository.Update(brand);
+            //dbContext.SaveChanges();
+            await _brandRepository.CommitAsync();
             return RedirectToAction("Index");
         }
 
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var brand = dbContext.Brands.Find(id);
+            //var brand = dbContext.Brands.Find(id);
+            var brand = await _brandRepository.GetOneAsync(b => b.Id == id);
             if (brand == null)
             {
                 return RedirectToAction("NotFoundPage", "Home");
@@ -95,8 +111,10 @@ namespace Ecommerce.Areas.Admin.Controllers
             {
                 System.IO.File.Delete(Oldfilepath);
             }
-            dbContext.Brands.Remove(brand);
-            dbContext.SaveChanges ();
+            //dbContext.Brands.Remove(brand);
+            _brandRepository.Delete(brand);
+            //dbContext.SaveChanges ();
+            await _brandRepository.CommitAsync();
 
             return RedirectToAction("Index");
         }

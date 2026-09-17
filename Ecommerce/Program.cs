@@ -1,7 +1,15 @@
+using Ecommerce.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddScoped<IRepository<Category>,Repository<Category>>();
+builder.Services.AddScoped<IRepository<Brand>,Repository<Brand>>();
+builder.Services.AddScoped<IRepository<Product>,Repository<Product>>();
+builder.Services.AddScoped<IProductSubImageRepository,ProductSubImageRepository>();
+builder.Services.AddScoped<IProductColorRepository,ProductColorRepository>();
 
 var app = builder.Build();
 

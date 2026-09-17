@@ -1,4 +1,5 @@
 ﻿using Ecommerce.DataAccess;
+using Ecommerce.Repositories;
 using Ecommerce.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +11,26 @@ namespace Ecommerce.Areas.Admin.Controllers
     [Area("Admin")]
     public class ProductController : Controller
     {
-        private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
+        //private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
+        private readonly IRepository<Product> _productRepository;// = new Repository<Product>();
+        private readonly IRepository<Category> _categoryRepository;// = new Repository<Category>();
+        private readonly IRepository<Brand> _brandRepository; //= new Repository<Brand>();
+        private readonly IProductSubImageRepository _productSubImageRepository; //= new ProductSubImageRepository();
+        private readonly IProductColorRepository _productColorRepository;//= new ProductColorRepository();
 
-        public IActionResult Index(ProductFilterVM filter)
+        public ProductController(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Brand> brandRepository, IProductSubImageRepository productSubImageRepository, IProductColorRepository productColorRepository)
         {
-            var products = dbContext.Products.AsQueryable();
+            _productRepository = productRepository;
+            _categoryRepository = categoryRepository;
+            _brandRepository = brandRepository;
+            _productSubImageRepository = productSubImageRepository;
+            _productColorRepository = productColorRepository;
+        }
+
+        public async Task<IActionResult> Index(ProductFilterVM filter)
+        {
+            //var products = dbContext.Products.AsQueryable();
+            var products = await _productRepository.GetAllAsync(includes: [p => p.Category, p => p.Brand]);
             if (filter.ProductName != null)
             {
                 products = products.Where(p => p.Name.Contains(filter.ProductName));
@@ -42,8 +58,10 @@ namespace Ecommerce.Areas.Admin.Controllers
             }
 
             //viewbag 
-            ViewBag.categories = dbContext.Categories;
-            ViewBag.brands = dbContext.Brands;
+            //ViewBag.categories = dbContext.Categories;
+            ViewBag.categories = await _categoryRepository.GetAllAsync();
+            //ViewBag.brands = dbContext.Brands;
+            ViewBag.brands = await _brandRepository.GetAllAsync() ;
             ViewBag.filter = filter;
 
             //paggination
@@ -58,20 +76,22 @@ namespace Ecommerce.Areas.Admin.Controllers
 
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var categories = dbContext.Categories.ToList();
-            var brands = dbContext.Brands.ToList();
+           // var categories = dbContext.Categories.ToList();
+            var categories = await _categoryRepository.GetAllAsync();
+            //var brands = dbContext.Brands.ToList();
+            var brands = await _brandRepository.GetAllAsync();
             return View(new ProductVM()
             {
-                Categories = categories,
-                Brands = brands
+                Categories = categories.ToList(),
+                Brands = brands.ToList()
             });
         }
 
 
         [HttpPost]
-        public IActionResult Create(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
+        public async Task<IActionResult> Create(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
         {
             if (ImageFile != null)
             {
@@ -86,9 +106,10 @@ namespace Ecommerce.Areas.Admin.Controllers
 
             }
 
-            var SavedProduct = dbContext.Products.Add(product);
-            dbContext.SaveChanges();
-
+            //var SavedProduct = dbContext.Products.Add(product);
+            var SavedProduct = await _productRepository.InsertAsync(product);
+            //dbContext.SaveChanges();
+            await _productRepository.CommitAsync();
             // add product SubImages 
             if (SubImageFiles != null && SubImageFiles.Count() > 0)
             {
@@ -100,7 +121,8 @@ namespace Ecommerce.Areas.Admin.Controllers
                     {
                         image.CopyTo(stream);
                     }
-                    dbContext.ProductSubImages.Add(new ProductSubImage
+                    //dbContext.ProductSubImages.Add(new ProductSubImage
+                    await  _productSubImageRepository.InsertAsync(new ProductSubImage
                     {
                         ProductId = SavedProduct.Entity.Id,
                         Img = filename
@@ -108,12 +130,15 @@ namespace Ecommerce.Areas.Admin.Controllers
                 }
             }
 
+            await _productSubImageRepository.CommitAsync();
+
             // add SubColors
             if (Colors != null && Colors.Count() > 0)
             {
                 foreach (var color in Colors)
                 {
-                    dbContext.ProductColors.Add(new ProductColor
+                    //dbContext.ProductColors.Add(new ProductColor
+                    await _productColorRepository.InsertAsync(new ProductColor
                     {
                         ProductId = SavedProduct.Entity.Id,
                         Color = color
@@ -123,16 +148,18 @@ namespace Ecommerce.Areas.Admin.Controllers
 
 
 
-            dbContext.SaveChanges();
+            //dbContext.SaveChanges();
+            await _productColorRepository.CommitAsync();
             return RedirectToAction(nameof(Index));
         }
 
 
 
         [HttpGet]
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var product = dbContext.Products.FirstOrDefault(b => b.Id == id);
+           // var product = dbContext.Products.FirstOrDefault(b => b.Id == id);
+            var product = await _productRepository.GetOneAsync(b => b.Id == id);
             if (product == null)
             {
                 return RedirectToAction("NotFoundPage", "Home");
@@ -141,20 +168,25 @@ namespace Ecommerce.Areas.Admin.Controllers
 
             return View(new ProductVM
             {
-                Categories = dbContext.Categories.ToList(),
-                Brands = dbContext.Brands.ToList(),
+                //Categories = dbContext.Categories.ToList(),
+                Categories = (await _categoryRepository.GetAllAsync()).ToList(),
+                //Brands = dbContext.Brands.ToList(),
+                Brands = (await _brandRepository.GetAllAsync()).ToList(),
                 Product = product,
-                SubImages = dbContext.ProductSubImages.Where(e => e.ProductId == id).ToList(),
-                Colors = dbContext.ProductColors.Where(e => e.ProductId == id).ToList()
+                //SubImages = dbContext.ProductSubImages.Where(e => e.ProductId == id).ToList(),
+                SubImages = (await _productSubImageRepository.GetAllAsync(e => e.ProductId == id)).ToList(),
+                //Colors = dbContext.ProductColors.Where(e => e.ProductId == id).ToList()
+                Colors = (await _productColorRepository.GetAllAsync(e => e.ProductId == id)).ToList()
             });
         }
 
 
 
         [HttpPost]
-        public IActionResult Update(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
+        public async Task<IActionResult> Update(Product product, IFormFile ImageFile, List<IFormFile> SubImageFiles, List<string> Colors)
         {
-            var productInDb = dbContext.Products.AsNoTracking().FirstOrDefault(b => b.Id == product.Id);
+            //var productInDb = dbContext.Products.AsNoTracking().FirstOrDefault(b => b.Id == product.Id);
+            var productInDb = await _productRepository.GetOneAsync(b => b.Id == product.Id,IsTracked:false);
 
 
             if (ImageFile != null)
@@ -181,17 +213,21 @@ namespace Ecommerce.Areas.Admin.Controllers
                 product.MainImg = productInDb.MainImg;
             }
 
-
+            _productRepository.Update(product);
+            await _productRepository.CommitAsync();
 
 
 
             if (SubImageFiles != null && SubImageFiles.Count() > 0)
             {
-                var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == productInDb.Id);
-                
-                //remove from DB
-                dbContext.ProductSubImages.RemoveRange(oldSubImages);
+                //var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == productInDb.Id);
+                var oldSubImages = await _productSubImageRepository.GetAllAsync(e => e.ProductId == productInDb.Id);
 
+                //remove from DB
+                //dbContext.ProductSubImages.RemoveRange(oldSubImages);
+
+                _productSubImageRepository.RemoveRange(oldSubImages);
+          
 
                 //remove from WWWroot
                 foreach (var oldImage in oldSubImages)
@@ -219,7 +255,8 @@ namespace Ecommerce.Areas.Admin.Controllers
                         }
 
                         // add in DB
-                        dbContext.ProductSubImages.Add(new ProductSubImage
+                        //dbContext.ProductSubImages.Add(new ProductSubImage
+                        await _productSubImageRepository.InsertAsync(new ProductSubImage
                         {
                             ProductId = productInDb.Id,
                             Img = filename,
@@ -230,19 +267,22 @@ namespace Ecommerce.Areas.Admin.Controllers
                 }
             }
 
-
+            await _productSubImageRepository.CommitAsync();
 
             if (Colors != null && Colors.Count() > 0)
             {
                 //remove from DB
-                var oldColors = dbContext.ProductColors.Where(e => e.ProductId == productInDb.Id);
-                dbContext.ProductColors.RemoveRange(oldColors);
+                //var oldColors = dbContext.ProductColors.Where(e => e.ProductId == productInDb.Id);
+                var oldColors = await _productColorRepository.GetAllAsync(e => e.ProductId == productInDb.Id);
+                //dbContext.ProductColors.RemoveRange(oldColors);
+                _productColorRepository.RemoveRange(oldColors);
 
 
                 // save in DB
                 foreach (var color in Colors)
                 {
-                    dbContext.ProductColors.Add(new ProductColor
+                    //dbContext.ProductColors.Add(new ProductColor
+                    await _productColorRepository.InsertAsync(new ProductColor
                     {
                         ProductId = productInDb.Id,
                         Color = color
@@ -250,9 +290,12 @@ namespace Ecommerce.Areas.Admin.Controllers
                 }
             }
 
-            dbContext.Products.Update(product);
-            dbContext.SaveChanges();
+            //dbContext.Products.Update(product);
+            //dbContext.SaveChanges();
 
+
+            _productRepository.Update(product);
+            await _productRepository.CommitAsync();
 
 
 
@@ -263,9 +306,10 @@ namespace Ecommerce.Areas.Admin.Controllers
 
 
 
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var product = dbContext.Products.Find(id);
+            //var product = dbContext.Products.Find(id);
+            var product = await _productRepository.GetOneAsync(p => p.Id == id );
             if (product == null)
             {
                 return RedirectToAction("NotFoundPage", "Home");
@@ -278,9 +322,10 @@ namespace Ecommerce.Areas.Admin.Controllers
             }
 
 
-            var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == product.Id);
+            //var oldSubImages = dbContext.ProductSubImages.Where(e => e.ProductId == product.Id);
+            var oldSubImages = await _productSubImageRepository.GetAllAsync(e => e.ProductId == product.Id);
 
-        
+
 
             //remove from WWWroot
             foreach (var oldImage in oldSubImages)
@@ -293,21 +338,26 @@ namespace Ecommerce.Areas.Admin.Controllers
                 }
             }
 
-            dbContext.Products.Remove(product);
-            dbContext.SaveChanges();
+            //dbContext.Products.Remove(product);
+            _productRepository.Delete(product);
+            //dbContext.SaveChanges();
+            await _productRepository.CommitAsync();
 
             return RedirectToAction("Index");
         }
 
 
 
-        public IActionResult DeleteImg(int productId,string img)
+        public async Task<IActionResult> DeleteImg(int productId,string img)
         {
-            var ImgDb = dbContext.ProductSubImages.FirstOrDefault(ps => ps.ProductId == productId && ps.Img == img);
-            if(ImgDb != null)
+            //var ImgDb = dbContext.ProductSubImages.FirstOrDefault(ps => ps.ProductId == productId && ps.Img == img);
+            var ImgDb = await _productSubImageRepository.GetOneAsync(ps => ps.ProductId == productId && ps.Img == img);
+            if (ImgDb != null)
             {
-                dbContext.ProductSubImages.Remove(ImgDb);
-                dbContext.SaveChanges();
+                //dbContext.ProductSubImages.Remove(ImgDb);
+                _productSubImageRepository.Delete(ImgDb);
+                //dbContext.SaveChanges();
+                await _productSubImageRepository.CommitAsync();
             }
             return RedirectToAction(nameof(Update), new { id=productId});
         }

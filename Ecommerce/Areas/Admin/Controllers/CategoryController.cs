@@ -8,7 +8,13 @@ namespace Ecommerce.Areas.Admin.Controllers
     public class CategoryController : Controller
     {
         //private readonly ApplicationDbContext dbContext = new ApplicationDbContext();
-        private readonly CategoryRepository _categoryRepository = new CategoryRepository();
+        private readonly IRepository<Category> _categoryRepository;//= new Repository<Category>();
+
+        public CategoryController(IRepository<Category> categoryRepository)
+        {
+            _categoryRepository = categoryRepository;
+        }
+
         public async Task<IActionResult> Index()
         {
             //var categories = dbContext.Categories.AsQueryable();
