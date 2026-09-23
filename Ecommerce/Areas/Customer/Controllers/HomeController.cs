@@ -10,7 +10,13 @@ namespace Ecommerce.Areas.Customer.Controllers
     [Area("Customer")]
     public class HomeController : Controller
     {
-        private readonly ApplicationDbContext dbcontext = new ApplicationDbContext();
+        private readonly ApplicationDbContext dbcontext ; // = new ApplicationDbContext();
+
+        public HomeController(ApplicationDbContext _context)
+        {
+            dbcontext = _context;
+            
+        }
         public IActionResult Index(ProductFilterVM filter)
         {
             var products = dbcontext.Products.AsQueryable();
