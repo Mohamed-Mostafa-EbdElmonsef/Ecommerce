@@ -1,5 +1,6 @@
 using Ecommerce.DataAccess;
 using Ecommerce.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -17,6 +18,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 });
+
+
+builder.Services.AddIdentity<ApplicationUser,IdentityRole>(options =>
+    { 
+        options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddScoped<IRepository<Category>,Repository<Category>>();
 builder.Services.AddScoped<IRepository<Brand>,Repository<Brand>>();
